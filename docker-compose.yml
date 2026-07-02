@@ -1,0 +1,14 @@
+name: tgelon
+
+services:
+  taxi-bot:
+    container_name: tgelon-bot
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/taxi_bot.db
+      FSM_STORAGE_PATH: ./data/fsm_storage.json
