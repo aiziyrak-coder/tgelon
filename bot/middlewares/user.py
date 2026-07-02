@@ -54,6 +54,15 @@ class UserMiddleware(BaseMiddleware):
             )
 
         is_admin = self.config.is_admin(tg_user.id)
+        if is_admin and not user.is_registered:
+            async with self.db.session_factory() as session:
+                u = await repo.get_user_by_id(session, user.id)
+                if u and not u.is_registered:
+                    u.is_registered = True
+                    await session.commit()
+                    await session.refresh(u)
+                    user = u
+
         if user.is_blocked and not is_admin:
             msg = _extract_message(event)
             if msg:

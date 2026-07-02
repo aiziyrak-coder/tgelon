@@ -13,6 +13,7 @@ from aiogram.types import ErrorEvent, TelegramObject
 
 from bot.config import Config, load_config
 from bot.database.db import Database
+from bot.database import repository as repo
 from bot.handlers import admin, announcements, chats, collections, distribute, fallback, guide, logs, my_chat_member, registration, schedules
 from bot.keyboards.menus import main_menu_kb
 from bot.middlewares.registration import RegistrationMiddleware
@@ -96,11 +97,19 @@ async def main() -> None:
     @dp.errors()
     async def on_error(event: ErrorEvent):
         logger.exception("Handler xatosi: %s", event.exception)
+        is_admin = False
         try:
+            if event.update.message and event.update.message.from_user:
+                async with db.session_factory() as session:
+                    u = await repo.get_user_by_telegram_id(
+                        session, event.update.message.from_user.id
+                    )
+                if u and config.is_admin(event.update.message.from_user.id):
+                    is_admin = True
             if event.update.message:
                 await event.update.message.answer(
                     "❌ Kichik xatolik bo'ldi.\n\n/start bosing — hammasi tiklanadi.",
-                    reply_markup=main_menu_kb(),
+                    reply_markup=main_menu_kb(is_admin=is_admin),
                 )
             elif event.update.callback_query:
                 await event.update.callback_query.answer(

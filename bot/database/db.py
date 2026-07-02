@@ -20,7 +20,6 @@ MIGRATIONS = [
     "ALTER TABLE users ADD COLUMN phone VARCHAR(32)",
     "ALTER TABLE users ADD COLUMN is_registered BOOLEAN DEFAULT 0",
     "ALTER TABLE chats ADD COLUMN user_is_admin BOOLEAN DEFAULT 0",
-    "UPDATE chats SET user_is_admin = bot_is_admin WHERE user_is_admin = 0 AND bot_is_admin = 1",
 ]
 
 
@@ -61,8 +60,8 @@ class Database:
         for sql in MIGRATIONS:
             try:
                 await conn.execute(text(sql))
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Migration skip: %s — %s", sql[:60], exc)
 
     def session(self):
         return self.session_factory()

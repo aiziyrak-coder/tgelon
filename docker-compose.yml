@@ -12,3 +12,9 @@ services:
     environment:
       DATABASE_URL: sqlite+aiosqlite:///./data/taxi_bot.db
       FSM_STORAGE_PATH: ./data/fsm_storage.json
+    healthcheck:
+      test: ["CMD", "python", "scripts/health_check.py"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s

@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery, Message
 from bot.database.db import Database
 from bot.database import repository as repo
 from bot.database.models import User
-from bot.database.repository import ScheduleExistsError
+from bot.database.repository import OwnershipError, ScheduleExistsError
 from bot.keyboards.inline import (
     CB_SCHED_TOGGLE,
     active_schedules_kb,
@@ -167,6 +167,9 @@ async def dist_start(
         ann = await repo.get_announcement(session, db_user.id, ann_id)
         col = await repo.get_collection(session, db_user.id, col_id)
         user = await repo.get_user_by_id(session, db_user.id)
+        if not ann or not col or not user:
+            await callback.answer("E'lon yoki jamlanma topilmadi", show_alert=True)
+            return
         try:
             sch = await repo.create_schedule(session, db_user.id, ann_id, col_id, minutes)
         except ScheduleExistsError:
@@ -175,7 +178,7 @@ async def dist_start(
                 show_alert=True,
             )
             return
-        except ValueError as exc:
+        except (ValueError, OwnershipError) as exc:
             await callback.answer(str(exc), show_alert=True)
             return
 
@@ -185,6 +188,8 @@ async def dist_start(
     )
 
     if result["sent"] > 0:
+        async with db.session_factory() as session:
+            await repo.mark_schedule_attempt(session, sch.id, advance=True)
         text = (
             f"✅ <b>Tarqatish boshlandi!</b>\n\n"
             f"📢 {esc(ann.name)}\n"

@@ -111,7 +111,7 @@ async def sched_custom_start(callback: CallbackQuery, state: FSMContext) -> None
     await state.set_state(ScheduleStates.waiting_edit_interval)
     await state.update_data(edit_sched_id=sched_id)
     await callback.message.answer(
-        "✏️ Yangi interval (daqiqa, 5–10080):",
+        "✏️ Yangi interval (daqiqa, 1–10080):",
         reply_markup=cancel_kb(),
     )
     await callback.answer()

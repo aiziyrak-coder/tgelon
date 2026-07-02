@@ -42,7 +42,12 @@ class PostScheduler:
                 continue
             async with self._lock:
                 try:
-                    await process_due_schedules(self.bot, self.db)
+                    await asyncio.wait_for(
+                        process_due_schedules(self.bot, self.db),
+                        timeout=120,
+                    )
+                except asyncio.TimeoutError:
+                    logger.error("Scheduler tick timeout (120s)")
                 except Exception:
                     logger.exception("Scheduler tick failed")
             await asyncio.sleep(self.config.scheduler_interval)

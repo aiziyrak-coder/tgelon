@@ -111,9 +111,11 @@ async def cb_col_add_pick(callback: CallbackQuery, db: Database, db_user: User) 
         chats = await repo.list_chats(session, db_user.id)
         col = await repo.get_collection(session, db_user.id, col_id)
     in_col = {link.chat_id for link in (col.chats or []) if link.chat_id}
-    admin_chats = [c for c in chats if c.bot_is_admin]
+    admin_chats = [c for c in chats if c.bot_is_admin and c.user_is_admin]
     if not admin_chats:
-        await callback.answer("Admin bo'lgan guruh yo'q", show_alert=True)
+        await callback.answer(
+            "Siz va bot admin bo'lgan guruh yo'q", show_alert=True
+        )
         return
     await callback.message.edit_text(
         "Qaysi guruhni qo'shamiz?",

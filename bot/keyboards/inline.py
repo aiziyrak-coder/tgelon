@@ -83,21 +83,11 @@ def ann_type_kb() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def announcements_list_kb(
-    announcements: list[Announcement],
-    *,
-    for_auto: bool = False,
-    for_send: bool = False,
-) -> InlineKeyboardMarkup:
+def announcements_list_kb(announcements: list[Announcement]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for ann in announcements:
         status = "✅" if ann.is_active else "⏸"
-        if for_auto:
-            cb = f"quick_auto:{ann.id}"
-        elif for_send:
-            cb = f"send_ask:{ann.id}"
-        else:
-            cb = f"{CB_ANN_VIEW}:{ann.id}"
+        cb = f"{CB_ANN_VIEW}:{ann.id}"
         builder.button(text=f"{status} {ann.name}", callback_data=cb)
     builder.adjust(1)
     return builder.as_markup()
@@ -334,25 +324,6 @@ INTERVAL_OPTIONS = [
 ]
 
 
-def pick_interval_kb(ann_id: int, col_id: int = 0) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    for minutes, label in INTERVAL_OPTIONS:
-        if col_id == 0:
-            cb = f"auto_set:{ann_id}:{minutes}"
-        else:
-            cb = f"{CB_SCHED_PICK_INT}:{ann_id}:{col_id}:{minutes}"
-        builder.button(text=label, callback_data=cb)
-    if col_id == 0:
-        builder.button(text="✏️ Boshqa vaqt", callback_data=f"auto_custom:{ann_id}")
-    elif col_id != 0:
-        builder.button(
-            text="✏️ Boshqa vaqt",
-            callback_data=f"{CB_SCHED_CUSTOM_INT}:{ann_id}:{col_id}",
-        )
-    builder.adjust(2)
-    return builder.as_markup()
-
-
 def pick_interval_edit_kb(sched_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for minutes, label in INTERVAL_OPTIONS:
@@ -363,18 +334,6 @@ def pick_interval_edit_kb(sched_id: int) -> InlineKeyboardMarkup:
     builder.button(text="✏️ Boshqa vaqt", callback_data=f"sched_custom:{sched_id}")
     builder.button(text="⬅️ Orqaga", callback_data=f"{CB_SCHED_VIEW}:{sched_id}")
     builder.adjust(2)
-    return builder.as_markup()
-
-
-def pick_collection_for_send_kb(collections: list[ChatCollection], ann_id: int) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    for col in collections:
-        builder.button(
-            text=col.name,
-            callback_data=f"{CB_ANN_PICK_COL}:{ann_id}:{col.id}",
-        )
-    builder.button(text="⬅️ Orqaga", callback_data=f"{CB_ANN_VIEW}:{ann_id}")
-    builder.adjust(1)
     return builder.as_markup()
 
 

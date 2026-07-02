@@ -1,4 +1,4 @@
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
@@ -41,6 +41,7 @@ from bot.texts.uz import (
 )
 from bot.utils.html import esc
 from bot.utils.phone import validate_phone
+from bot.utils.post_body import max_body_chars
 from bot.utils.templates import build_taxi_text
 from bot.utils.time import format_local
 
@@ -114,12 +115,26 @@ async def help_msg(message: Message, is_super_admin: bool) -> None:
 
 
 @router.message(F.text.in_(OLD_BTNS.keys()))
-async def old_buttons(message: Message, db: Database, db_user: User, is_super_admin: bool) -> None:
+async def old_buttons(
+    message: Message, db: Database, db_user: User, is_super_admin: bool, bot: Bot
+) -> None:
     mapped = OLD_BTNS[message.text]
     if mapped == BTN_MY_ANNS:
         await my_anns(message, db, db_user, is_super_admin)
     elif mapped == BTN_HELP:
         await help_msg(message, is_super_admin)
+    elif mapped == BTN_GROUPS:
+        from bot.handlers.chats import groups_menu
+        await groups_menu(message, db, db_user, bot, is_super_admin)
+    elif mapped == BTN_COLLECTIONS:
+        from bot.handlers.collections import collections_entry
+        await collections_entry(message, db, db_user, is_super_admin)
+    elif mapped == BTN_DISTRIBUTE:
+        from bot.handlers.distribute import distribute_menu
+        await distribute_menu(message, db, db_user, is_super_admin)
+    elif mapped == BTN_LOGS:
+        from bot.handlers.logs import logs_menu
+        await logs_menu(message, db, db_user, is_super_admin)
 
 
 @router.message(F.text == BTN_NEW_ANN)
@@ -225,11 +240,19 @@ async def w_name(message: Message, state: FSMContext) -> None:
 
 
 @router.message(AnnouncementStates.waiting_text, F.text)
-async def w_free_text(message: Message, state: FSMContext) -> None:
+async def w_free_text(message: Message, state: FSMContext, db_user: User) -> None:
     if _guard_menu(message):
         await message.answer(FSM_HINT, reply_markup=cancel_kb())
         return
-    await state.update_data(text=message.text.strip())
+    text = message.text.strip()
+    max_len = max_body_chars(has_photo=False, owner=db_user)
+    if len(text) > max_len:
+        await message.answer(
+            f"Matn juda uzun (maks. ~{max_len} belgi). Qisqartiring.",
+            reply_markup=cancel_kb(),
+        )
+        return
+    await state.update_data(text=text)
     await state.set_state(AnnouncementStates.confirming)
     data = await state.get_data()
     preview = data["text"]
@@ -246,11 +269,18 @@ async def w_free_text(message: Message, state: FSMContext) -> None:
 
 
 @router.message(AnnouncementStates.waiting_photo, F.photo)
-async def w_photo(message: Message, state: FSMContext) -> None:
+async def w_photo(message: Message, state: FSMContext, db_user: User) -> None:
     photo = message.photo[-1]
     caption = (message.caption or "").strip()
     data = await state.get_data()
     if caption:
+        max_len = max_body_chars(has_photo=True, owner=db_user)
+        if len(caption) > max_len:
+            await message.answer(
+                f"Matn juda uzun (maks. ~{max_len} belgi). Qisqartiring.",
+                reply_markup=cancel_kb(),
+            )
+            return
         await state.update_data(photo_file_id=photo.file_id, text=caption)
         await state.set_state(AnnouncementStates.confirming)
         await message.answer(
@@ -400,6 +430,13 @@ async def save_ann(
     callback: CallbackQuery, state: FSMContext, db: Database, db_user: User, is_super_admin: bool
 ) -> None:
     data = await state.get_data()
+    max_len = max_body_chars(has_photo=bool(data.get("photo_file_id")), owner=db_user)
+    if len(data.get("text", "")) > max_len:
+        await callback.answer(
+            f"Matn juda uzun (maks. ~{max_len} belgi). Qayta tahrirlang.",
+            show_alert=True,
+        )
+        return
     async with db.session_factory() as session:
         ann = await repo.create_announcement(
             session,

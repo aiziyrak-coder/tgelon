@@ -1,8 +1,22 @@
 """Bot modullarini tekshirish."""
+import asyncio
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+
+async def _check_db() -> None:
+    from bot.config import load_config
+    from bot.database.db import Database
+
+    config = load_config()
+    db = Database(config)
+    await db.init()
+    async with db.session_factory() as session:
+        from sqlalchemy import text
+
+        await session.execute(text("SELECT 1"))
 
 
 def main() -> int:
@@ -13,7 +27,8 @@ def main() -> int:
         from bot.services.poster import process_due_schedules  # noqa: F401
 
         load_config()
-        print("OK: barcha modullar yuklandi")
+        asyncio.run(_check_db())
+        print("OK: barcha modullar yuklandi, DB ulanishi ishlaydi")
         return 0
     except Exception as exc:
         print(f"XATO: {exc}")

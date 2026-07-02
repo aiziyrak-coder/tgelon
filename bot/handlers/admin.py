@@ -123,6 +123,9 @@ async def admin_block(callback: CallbackQuery, db: Database, is_super_admin: boo
     async with db.session_factory() as session:
         await repo.set_user_blocked(session, user_id, True)
         user = await repo.get_user_by_id(session, user_id)
+    if not user:
+        await callback.answer("Foydalanuvchi topilmadi", show_alert=True)
+        return
     await callback.message.edit_reply_markup(
         reply_markup=admin_user_detail_kb(user.id, user.is_blocked)
     )
@@ -138,6 +141,9 @@ async def admin_unblock(callback: CallbackQuery, db: Database, is_super_admin: b
     async with db.session_factory() as session:
         await repo.set_user_blocked(session, user_id, False)
         user = await repo.get_user_by_id(session, user_id)
+    if not user:
+        await callback.answer("Foydalanuvchi topilmadi", show_alert=True)
+        return
     await callback.message.edit_reply_markup(
         reply_markup=admin_user_detail_kb(user.id, user.is_blocked)
     )

@@ -3,7 +3,7 @@ from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, TelegramObject, Update
+from aiogram.types import CallbackQuery, ChatMemberUpdated, Message, TelegramObject, Update
 
 from bot.keyboards.menus import phone_share_kb
 from bot.states import RegistrationStates
@@ -21,6 +21,12 @@ class RegistrationMiddleware(BaseMiddleware):
         is_super_admin = data.get("is_super_admin", False)
 
         if not db_user or db_user.is_registered or is_super_admin:
+            return await handler(event, data)
+
+        # Guruhga bot qo'shilganda ro'yxatdan o'tmagan ham ishlashi kerak
+        if isinstance(event, Update) and event.my_chat_member:
+            return await handler(event, data)
+        if isinstance(event, ChatMemberUpdated):
             return await handler(event, data)
 
         state: FSMContext | None = data.get("state")

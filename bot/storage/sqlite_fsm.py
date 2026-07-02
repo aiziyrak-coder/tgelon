@@ -29,10 +29,12 @@ class SQLiteFSMStorage(BaseStorage):
 
     async def _save(self) -> None:
         async with self._lock:
-            self.path.write_text(
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(
                 json.dumps(self._data, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
+            tmp.replace(self.path)
 
     def _key(self, key: StorageKey) -> str:
         return f"{key.bot_id}:{key.chat_id}:{key.user_id}"
