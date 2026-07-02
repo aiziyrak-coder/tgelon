@@ -31,6 +31,26 @@ python run.py
 docker compose up -d --build
 ```
 
+## Server deploy (Docker, nginx ga tegmasdan)
+
+Bot polling rejimida ishlaydi — **nginx kerak emas**, boshqa loyihalarga ta'sir qilmaydi.
+
+```bash
+# Server: /opt/tgelon, container: tgelon-bot
+export DEPLOY_PASSWORD='...'
+export DEPLOY_ENV_FILE="$(cat .env)"
+python scripts/deploy_server.py
+```
+
+Yoki serverda qo'lda:
+
+```bash
+cd /opt/tgelon
+git pull origin main
+docker compose -p tgelon up -d --build
+docker compose -p tgelon logs -f
+```
+
 ## Zaxira
 
 ```bash

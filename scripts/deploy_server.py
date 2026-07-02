@@ -19,7 +19,10 @@ def run(ssh: paramiko.SSHClient, cmd: str, timeout: int = 600) -> tuple[int, str
     err = stderr.read().decode("utf-8", errors="replace")
     code = stdout.channel.recv_exit_status()
     if out.strip():
-        print(out.rstrip())
+        try:
+            print(out.rstrip())
+        except UnicodeEncodeError:
+            print(out.encode("ascii", errors="replace").decode("ascii"))
     if err.strip() and code != 0:
         print(err.rstrip(), file=sys.stderr)
     return code, out, err
